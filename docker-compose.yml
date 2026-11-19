@@ -1,21 +1,18 @@
 # Chatforge local development services.
-#
-# TODO: Services are added as each component is implemented.
-# The database engine is an outstanding decision (PostgreSQL is proposed).
 # Values are read from the root .env file (copy .env.example to .env).
 name: chatforge
 
-services: {}
-#  postgres:
-#    image: postgres:17
-#    environment:
-#      POSTGRES_DB: ${POSTGRES_DB}
-#      POSTGRES_USER: ${POSTGRES_USER}
-#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-#    ports:
-#      - "5432:5432"
-#    volumes:
-#      - chatforge-db:/var/lib/postgresql/data
-#
-# volumes:
-#   chatforge-db:
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - chatforge-db:/var/lib/postgresql/data
+
+volumes:
+  chatforge-db:
