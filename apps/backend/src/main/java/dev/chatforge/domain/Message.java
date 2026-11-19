@@ -16,6 +16,10 @@ public class Message {
     @JoinColumn(name = "conversation_id", nullable = false, updatable = false)
     private Conversation conversation;
 
+    // Read-only view of the foreign key, so the id can be read without loading the lazy association.
+    @Column(name = "conversation_id", insertable = false, updatable = false)
+    private UUID conversationId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "sender_type", nullable = false, updatable = false)
     private SenderType senderType;
@@ -34,6 +38,7 @@ public class Message {
 
     public Message(Conversation conversation, SenderType senderType, UUID senderId, String content) {
         this.conversation = conversation;
+        this.conversationId = conversation.getId();
         this.senderType = senderType;
         this.senderId = senderId;
         this.content = content;
@@ -41,6 +46,7 @@ public class Message {
 
     public UUID getId() { return id; }
     public Conversation getConversation() { return conversation; }
+    public UUID getConversationId() { return conversationId; }
     public SenderType getSenderType() { return senderType; }
     public UUID getSenderId() { return senderId; }
     public String getContent() { return content; }

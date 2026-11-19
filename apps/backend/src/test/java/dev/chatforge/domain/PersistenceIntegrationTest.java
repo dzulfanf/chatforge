@@ -47,8 +47,10 @@ class PersistenceIntegrationTest {
     @Test
     void returnsMessagesOfAConversationInChronologicalOrder() {
         Visitor visitor = visitors.save(new Visitor("Visitor"));
+        Visitor otherVisitor = visitors.save(new Visitor("Other"));
         Conversation conversation = conversations.save(new Conversation(visitor));
-        Conversation other = conversations.save(new Conversation(visitor));
+        // A visitor may have only one open conversation, so the other one belongs to another visitor.
+        Conversation other = conversations.save(new Conversation(otherVisitor));
 
         messages.save(new Message(conversation, SenderType.VISITOR, visitor.getId(), "first"));
         messages.save(new Message(conversation, SenderType.VISITOR, visitor.getId(), "second"));

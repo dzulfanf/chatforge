@@ -1,6 +1,6 @@
 # Chatforge Backend
 
-> Status: **persistence and authentication.** The schema and JWT authentication exist and are tested. Conversation/message REST endpoints and STOMP messaging are not implemented yet.
+> Status: **persistence, authentication and REST API.** STOMP real-time messaging is not implemented yet.
 
 Spring Boot service for Chatforge. Its job:
 
@@ -23,7 +23,7 @@ Verified (Java 21, Gradle 8.14, run in the `gradle:8.14-jdk21` Docker image):
 Not done yet:
 
 - Security, WebSocket/STOMP and JWT dependencies, added in the steps that use them.
-- Conversation and message REST endpoints, and STOMP messaging.
+- STOMP real-time messaging.
 - Provisioning of agent accounts: there is no registration endpoint, so agents must be inserted directly for now (hash passwords with BCrypt).
 - Rate limiting on `/api/auth/*`. `POST /api/auth/visitor` is unauthenticated by design and creates a row per call, so it can be abused until limits are added.
 
@@ -45,6 +45,24 @@ Notes:
 - Login returns the same `401` for an unknown email and a wrong password, and compares against a dummy hash so timing does not reveal which emails exist.
 - Cross-origin access is limited to `CORS_ALLOWED_ORIGINS` (comma-separated).
 - Tokens are not revocable before they expire.
+
+## REST API
+
+All endpoints need a bearer token. A visitor can only access their own conversation (anyone else's returns `404`, so existence is not leaked); agents can access any conversation.
+
+| Endpoint | Role | Purpose |
+| --- | --- | --- |
+| `POST /api/conversations` | visitor | Open a conversation. `201` when created, `200` with the existing one (a visitor has at most one open conversation, enforced by a partial unique index) |
+| `GET /api/conversations/{id}` | owner visitor, agent | Conversation details |
+| `GET /api/conversations/{id}/messages?page&size` | owner visitor, agent | Messages, oldest first. Page size defaults to 50 and is capped at 100 |
+| `POST /api/conversations/{id}/messages` | owner visitor, agent | Send a message (1 to 4000 characters). `409 conversation_closed` if closed |
+| `GET /api/agent/conversations?status&page&size` | agent | List conversations by status (default `OPEN`), most recently updated first |
+| `POST /api/agent/conversations/{id}/assign` | agent | Assign the conversation to the calling agent |
+| `POST /api/agent/conversations/{id}/close` | agent | Close the conversation (idempotent) |
+
+Errors are JSON: `{"error": "<code>"}` (`unauthorized`, `forbidden`, `not_found`, `conversation_closed`, ...). Validation failures return `400`.
+
+Business rules live in `ChatService` so the STOMP layer can reuse them. Any agent can currently reply in any conversation, whether or not it is assigned to them.
 
 ## Data model
 
