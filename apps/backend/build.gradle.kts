@@ -13,6 +13,10 @@ java {
     }
 }
 
+// Spring Boot 3.5.0 manages Testcontainers 1.21.1, which cannot talk to Docker Engine 29+
+// (HTTP 400: API version too old). Override until the managed version catches up.
+extra["testcontainers.version"] = "1.21.4"
+
 repositories {
     mavenCentral()
 }

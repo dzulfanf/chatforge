@@ -1,6 +1,6 @@
 # Chatforge Backend
 
-> Status: **skeleton only, not yet built or tested.**
+> Status: **skeleton only.** The application starts and its context test passes. No features are implemented yet.
 
 Spring Boot service for Chatforge. Its job:
 
@@ -9,20 +9,38 @@ Spring Boot service for Chatforge. Its job:
 - Persistence
 - Real-time messaging over STOMP on WebSocket
 
-This is a JVM project built with Gradle (Kotlin DSL). It is not part of the pnpm workspace.
+This is a JVM project built with Gradle (Kotlin DSL, wrapper included). It is not part of the pnpm workspace.
 
 ## Current state
 
-The Spring Boot skeleton (Java 21, web, validation, actuator, JPA, Flyway, PostgreSQL) was written **without a JDK available, so it has never been compiled or run**. Known gaps:
+Verified (Java 21, Gradle 8.14, run in the `gradle:8.14-jdk21` Docker image):
 
-- The Gradle wrapper (`gradlew`, `gradle/wrapper/`) is not generated yet. Run `gradle wrapper` with a local Gradle once, or generate it in the first verified build.
-- The Spring Boot version (3.5.0) and the dependency set have not been checked against a real build.
-- `ChatforgeApplicationTests` (context load against Testcontainers PostgreSQL) has not been run. It needs Docker.
-- Security, WebSocket/STOMP and JWT dependencies are added in the steps that use them.
+- `./gradlew build -x test` succeeds.
+- `ChatforgeApplicationTests` passes: the Spring context loads against a Testcontainers PostgreSQL 17 instance with Flyway enabled.
+
+Not done yet:
+
+- Security, WebSocket/STOMP and JWT dependencies, added in the steps that use them.
+- Database schema (no Flyway migrations yet), REST endpoints and messaging.
+
+## Prerequisites
+
+- JDK 21
+- Docker (the tests start PostgreSQL with Testcontainers)
+
+Testcontainers is pinned to 1.21.4 in `build.gradle.kts` because the version managed by Spring Boot 3.5.0 (1.21.1) cannot talk to Docker Engine 29+ (HTTP 400). Remove the override when Spring Boot's managed version supports it.
 
 ## Configuration
 
 See [`.env.example`](./.env.example). Spring Boot does not read `.env` files by itself, so export the variables in your shell or set them in your IDE run configuration. `DB_PASSWORD` is required and has no default.
+
+## Commands
+
+```bash
+./gradlew build         # compile and test
+./gradlew test          # tests only (needs Docker)
+./gradlew bootRun       # run the app (needs PostgreSQL and DB_PASSWORD)
+```
 
 ## Database
 
