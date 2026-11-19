@@ -17,8 +17,8 @@ Verified (Java 21, Gradle 8.14, run in the `gradle:8.14-jdk21` Docker image):
 
 - `./gradlew build -x test` succeeds.
 - `ChatforgeApplicationTests` passes: the Spring context loads against a Testcontainers PostgreSQL 17 instance with Flyway enabled.
-- 28 tests pass in total. `AuthIntegrationTest` (16 tests) and `JwtServiceTest` (6 tests) cover login, visitor tokens, expired/tampered/foreign tokens, role checks and CORS.
-- `PersistenceIntegrationTest` (5 tests) passes against PostgreSQL 17: agent lookup and unique email, message ordering per conversation, conversation queries by visitor and status, and the blank-content check constraint.
+- 43 tests pass in total (the last full run was split: the persistence class was re-run on its own after a test fix). `AuthIntegrationTest` (16) and `JwtServiceTest` (6) cover login, visitor tokens, expired/tampered/foreign tokens, role checks and CORS. `ChatIntegrationTest` (14) covers the REST API: access control, pagination, closed conversations and the one-open-conversation rule.
+- `PersistenceIntegrationTest` (6 tests) passes against PostgreSQL 17: agent lookup and unique email, message ordering per conversation, conversation queries by visitor and status, the blank-content check constraint, and the one-open-conversation-per-visitor index.
 
 Not done yet:
 

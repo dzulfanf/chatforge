@@ -65,10 +65,12 @@ class PersistenceIntegrationTest {
     @Test
     void listsConversationsByVisitorAndStatus() {
         Visitor visitor = visitors.save(new Visitor(null));
-        Conversation open = conversations.save(new Conversation(visitor));
-        Conversation closed = conversations.save(new Conversation(visitor));
+        // Close the first conversation (and flush) before opening the second: a visitor may have only
+        // one open conversation at a time, enforced by a partial unique index.
+        Conversation closed = conversations.saveAndFlush(new Conversation(visitor));
         closed.close();
         conversations.flush();
+        Conversation open = conversations.saveAndFlush(new Conversation(visitor));
 
         assertThat(conversations.findByVisitorId(visitor.getId())).hasSize(2);
         assertThat(conversations.findByStatusOrderByUpdatedAtDesc(ConversationStatus.OPEN, PageRequest.of(0, 10))
@@ -76,6 +78,15 @@ class PersistenceIntegrationTest {
                 .extracting(Conversation::getId)
                 .contains(open.getId())
                 .doesNotContain(closed.getId());
+    }
+
+    @Test
+    void rejectsSecondOpenConversationForTheSameVisitor() {
+        Visitor visitor = visitors.save(new Visitor("V"));
+        conversations.saveAndFlush(new Conversation(visitor));
+
+        assertThatThrownBy(() -> conversations.saveAndFlush(new Conversation(visitor)))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
