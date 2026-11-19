@@ -1,0 +1,61 @@
+# --- Dependencies ---
+node_modules/
+.pnpm-store/
+
+# --- Build output ---
+dist/
+dist-ssr/
+build/
+target/
+out/
+*.tsbuildinfo
+.vite/
+
+# --- Java / Gradle / Maven ---
+.gradle/
+*.class
+*.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.jar
+hs_err_pid*
+
+# --- Test & coverage ---
+coverage/
+*.lcov
+playwright-report/
+test-results/
+
+# --- Logs ---
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Environment & secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+
+# --- IDE / editors ---
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini

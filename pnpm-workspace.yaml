@@ -1,0 +1,6 @@
+# JavaScript/TypeScript workspace packages.
+# apps/backend is a JVM (Spring Boot) project and is intentionally not part of the pnpm workspace.
+packages:
+  - "apps/widget"
+  - "apps/host"
+  - "packages/*"

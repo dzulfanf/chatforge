@@ -1,0 +1,16 @@
+{
+  "name": "chatforge",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A real-time messaging platform featuring an embeddable chat widget, built with Spring Boot, STOMP, Vue 3, and TypeScript. Designed as a modular monorepo with independent backend, widget, and host applications.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dzulfanf/chatforge.git"
+  },
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {}
+}
