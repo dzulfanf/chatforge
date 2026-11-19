@@ -1,6 +1,6 @@
 # Chatforge Backend
 
-> Status: **skeleton only.** The application starts and its context test passes. No features are implemented yet.
+> Status: **persistence layer only.** The schema, entities and repositories exist and are tested. There are no REST endpoints, authentication or messaging yet.
 
 Spring Boot service for Chatforge. Its job:
 
@@ -17,11 +17,16 @@ Verified (Java 21, Gradle 8.14, run in the `gradle:8.14-jdk21` Docker image):
 
 - `./gradlew build -x test` succeeds.
 - `ChatforgeApplicationTests` passes: the Spring context loads against a Testcontainers PostgreSQL 17 instance with Flyway enabled.
+- `PersistenceIntegrationTest` (5 tests) passes against PostgreSQL 17: agent lookup and unique email, message ordering per conversation, conversation queries by visitor and status, and the blank-content check constraint.
 
 Not done yet:
 
 - Security, WebSocket/STOMP and JWT dependencies, added in the steps that use them.
-- Database schema (no Flyway migrations yet), REST endpoints and messaging.
+- REST endpoints, authentication and messaging.
+
+## Data model
+
+Flyway migration `V1__create_core_tables.sql` creates `agents`, `visitors`, `conversations` and `messages` (UUID keys, `timestamptz` timestamps, string enums with check constraints). `messages.sender_id` points to an agent or a visitor depending on `sender_type`, so it has no foreign key and must be validated in the application layer.
 
 ## Prerequisites
 
