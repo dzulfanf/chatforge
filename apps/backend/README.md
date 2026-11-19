@@ -1,6 +1,6 @@
 # Chatforge Backend
 
-> Status: **persistence layer only.** The schema, entities and repositories exist and are tested. There are no REST endpoints, authentication or messaging yet.
+> Status: **persistence and authentication.** The schema and JWT authentication exist and are tested. Conversation/message REST endpoints and STOMP messaging are not implemented yet.
 
 Spring Boot service for Chatforge. Its job:
 
@@ -17,12 +17,34 @@ Verified (Java 21, Gradle 8.14, run in the `gradle:8.14-jdk21` Docker image):
 
 - `./gradlew build -x test` succeeds.
 - `ChatforgeApplicationTests` passes: the Spring context loads against a Testcontainers PostgreSQL 17 instance with Flyway enabled.
+- 28 tests pass in total. `AuthIntegrationTest` (16 tests) and `JwtServiceTest` (6 tests) cover login, visitor tokens, expired/tampered/foreign tokens, role checks and CORS.
 - `PersistenceIntegrationTest` (5 tests) passes against PostgreSQL 17: agent lookup and unique email, message ordering per conversation, conversation queries by visitor and status, and the blank-content check constraint.
 
 Not done yet:
 
 - Security, WebSocket/STOMP and JWT dependencies, added in the steps that use them.
-- REST endpoints, authentication and messaging.
+- Conversation and message REST endpoints, and STOMP messaging.
+- Provisioning of agent accounts: there is no registration endpoint, so agents must be inserted directly for now (hash passwords with BCrypt).
+- Rate limiting on `/api/auth/*`. `POST /api/auth/visitor` is unauthenticated by design and creates a row per call, so it can be abused until limits are added.
+
+## Authentication
+
+Stateless JWT (HS256). Tokens carry the user id as `sub` and a `role` claim (`AGENT` or `VISITOR`).
+
+| Endpoint | Access | Purpose |
+| --- | --- | --- |
+| `POST /api/auth/login` | public | Agent email and password, returns a bearer token (`JWT_EXPIRATION`, default 1 h) |
+| `POST /api/auth/visitor` | public | Creates a visitor, returns a bearer token (`JWT_VISITOR_EXPIRATION`, default 24 h) |
+| `GET /api/auth/me` | any valid token | Returns the caller's id and role |
+| `/api/agent/**` | `AGENT` only | Reserved prefix for agent endpoints |
+
+Notes:
+
+- `JWT_SECRET` must be base64-encoded and decode to at least 32 bytes (`openssl rand -base64 32`). The app refuses to start otherwise.
+- Invalid, expired, tampered or foreign-signed tokens get `401`; a valid token with the wrong role gets `403`.
+- Login returns the same `401` for an unknown email and a wrong password, and compares against a dummy hash so timing does not reveal which emails exist.
+- Cross-origin access is limited to `CORS_ALLOWED_ORIGINS` (comma-separated).
+- Tokens are not revocable before they expire.
 
 ## Data model
 
