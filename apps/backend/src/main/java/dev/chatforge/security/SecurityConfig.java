@@ -35,6 +35,9 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/visitor", "/actuator/health").permitAll()
+                        // Browsers cannot set headers on a WebSocket handshake, so the JWT is checked on the
+                        // STOMP CONNECT frame instead (see StompAuthChannelInterceptor).
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/agent/**").hasRole(Role.AGENT.name())
                         .requestMatchers(HttpMethod.POST, "/api/conversations").hasRole(Role.VISITOR.name())
                         .anyRequest().authenticated())

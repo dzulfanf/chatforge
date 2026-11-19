@@ -1,6 +1,6 @@
 # Chatforge Backend
 
-> Status: **persistence, authentication and REST API.** STOMP real-time messaging is not implemented yet.
+> Status: **persistence, authentication, REST API and STOMP real-time messaging.** The widget and host apps are not started yet.
 
 Spring Boot service for Chatforge. Its job:
 
@@ -23,7 +23,8 @@ Verified (Java 21, Gradle 8.14, run in the `gradle:8.14-jdk21` Docker image):
 Not done yet:
 
 - Security, WebSocket/STOMP and JWT dependencies, added in the steps that use them.
-- STOMP real-time messaging.
+- STOMP: a session stays authorized after its token expires, until the client disconnects. There is no rate limiting on sends.
+- Scaling out: the in-memory simple broker supports a single backend instance only (an external broker such as RabbitMQ would be needed for more).
 - Provisioning of agent accounts: there is no registration endpoint, so agents must be inserted directly for now (hash passwords with BCrypt).
 - Rate limiting on `/api/auth/*`. `POST /api/auth/visitor` is unauthenticated by design and creates a row per call, so it can be abused until limits are added.
 
@@ -63,6 +64,25 @@ All endpoints need a bearer token. A visitor can only access their own conversat
 Errors are JSON: `{"error": "<code>"}` (`unauthorized`, `forbidden`, `not_found`, `conversation_closed`, ...). Validation failures return `400`.
 
 Business rules live in `ChatService` so the STOMP layer can reuse them. Any agent can currently reply in any conversation, whether or not it is assigned to them.
+
+## Real-time messaging (STOMP)
+
+Native WebSocket (no SockJS) at `/ws`, using STOMP. The handshake is limited to `CORS_ALLOWED_ORIGINS`. Browsers cannot set headers on a WebSocket handshake, so the JWT is sent in the STOMP `CONNECT` frame:
+
+```text
+CONNECT
+Authorization:Bearer <jwt>
+```
+
+| Action | Destination | Rules |
+| --- | --- | --- |
+| Subscribe | `/topic/conversations/{id}` | Only for a conversation the caller may access (own conversation for visitors, any for agents) |
+| Subscribe | `/user/queue/errors` | Receives errors for messages this session sent |
+| Send | `/app/conversations/{id}/send` | Payload `{"content": "..."}`, same rules as the REST endpoint |
+
+- A missing or invalid token on `CONNECT`, or a forbidden subscription, makes the server send a STOMP `ERROR` frame and close the session.
+- Messages are saved first and broadcast to `/topic/conversations/{id}` only after the transaction commits, for both the REST and the STOMP entry points. The payload has the same shape as the REST `MessageResponse`.
+- Send errors go only to the sender, as `{"error": "<code>"}` (`invalid_message`, `not_found`, `conversation_closed`).
 
 ## Data model
 

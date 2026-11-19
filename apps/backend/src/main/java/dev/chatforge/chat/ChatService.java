@@ -15,8 +15,11 @@ import dev.chatforge.security.Role;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * Conversation and message use cases. Access rules live here (not in the controllers) so that other
@@ -28,20 +31,26 @@ public class ChatService {
     static final int DEFAULT_PAGE_SIZE = 50;
     static final int MAX_PAGE_SIZE = 100;
 
+    /** STOMP topic prefix; new messages of a conversation are published to this prefix plus its id. */
+    public static final String TOPIC_PREFIX = "/topic/conversations/";
+
     private final ConversationRepository conversations;
     private final MessageRepository messages;
     private final VisitorRepository visitors;
     private final AgentRepository agents;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public ChatService(
             ConversationRepository conversations,
             MessageRepository messages,
             VisitorRepository visitors,
-            AgentRepository agents) {
+            AgentRepository agents,
+            SimpMessagingTemplate messagingTemplate) {
         this.conversations = conversations;
         this.messages = messages;
         this.visitors = visitors;
         this.agents = agents;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public record OpenResult(ConversationResponse conversation, boolean created) {
@@ -98,7 +107,22 @@ public class ChatService {
         SenderType senderType = user.role() == Role.AGENT ? SenderType.AGENT : SenderType.VISITOR;
         Message message = messages.save(new Message(conversation, senderType, user.id(), content));
         conversation.touch();
-        return MessageResponse.from(message);
+        MessageResponse response = MessageResponse.from(message);
+        publishAfterCommit(response);
+        return response;
+    }
+
+    /**
+     * Broadcasts to subscribers only once the message is committed, so nothing is published for a
+     * write that rolls back. Used by both the REST and the STOMP entry points.
+     */
+    private void publishAfterCommit(MessageResponse response) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                messagingTemplate.convertAndSend(TOPIC_PREFIX + response.conversationId(), response);
+            }
+        });
     }
 
     @Transactional
